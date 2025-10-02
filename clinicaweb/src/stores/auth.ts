@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 interface AuthState {
   isAuthenticated: boolean
   userEmail: string | null
+  userFullName: string | null
 }
 
 interface LoginResponse {
@@ -38,6 +39,7 @@ export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     isAuthenticated: false,
     userEmail: null,
+    userFullName: null,
   }),
   actions: {
     async login(email: string, password: string): Promise<LoginResult> {
@@ -49,6 +51,7 @@ export const useAuthStore = defineStore('auth', {
 
         this.isAuthenticated = true
         this.userEmail = response.data.email
+        this.userFullName = response.data.fullName
 
         return {
           success: true,
@@ -57,6 +60,7 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         this.isAuthenticated = false
         this.userEmail = null
+        this.userFullName = null
 
         if (axios.isAxiosError(error)) {
           const message =
@@ -77,6 +81,7 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       this.isAuthenticated = false
       this.userEmail = null
+      this.userFullName = null
     },
   },
 })
