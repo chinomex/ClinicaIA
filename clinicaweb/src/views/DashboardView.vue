@@ -113,6 +113,11 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const displayName = computed(() => {
+  const fullName = authStore.userFullName?.trim()
+  if (fullName) {
+    return fullName
+  }
+
   const email = authStore.userEmail
   if (email && email.includes('@')) {
     const namePart = email.split('@')[0]
@@ -120,6 +125,7 @@ const displayName = computed(() => {
       return namePart.charAt(0).toUpperCase() + namePart.slice(1)
     }
   }
+
   return 'Paciente'
 })
 
