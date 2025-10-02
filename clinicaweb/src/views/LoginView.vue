@@ -1,10 +1,16 @@
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-12">
-    <div class="w-full max-w-md space-y-8 rounded-3xl bg-slate-900/80 p-10 shadow-2xl shadow-black/40 ring-1 ring-white/10">
+  <div
+    class="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-12"
+  >
+    <div
+      class="w-full max-w-md space-y-8 rounded-3xl bg-slate-900/80 p-10 shadow-2xl shadow-black/40 ring-1 ring-white/10"
+    >
       <div class="space-y-3 text-center">
         <p class="text-sm font-medium uppercase tracking-[0.4em] text-brand-200">Bienvenido de nuevo</p>
         <h1 class="font-display text-3xl font-semibold text-white">Inicia sesión</h1>
-        <p class="text-sm text-slate-300">Accede a tu panel, gestiona tus citas y consulta tu expediente digital.</p>
+        <p class="text-sm text-slate-300">
+          Accede a tu panel, gestiona tus citas y consulta tu expediente digital.
+        </p>
       </div>
 
       <form class="space-y-6" @submit.prevent="handleSubmit">
@@ -39,16 +45,27 @@
         <button
           type="submit"
           class="inline-flex w-full items-center justify-center rounded-full bg-brand-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition disabled:cursor-not-allowed disabled:bg-brand-500/40 disabled:text-white/70 hover:-translate-y-0.5 hover:bg-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
-          :disabled="!isFormValid"
+          :disabled="!isFormValid || isSubmitting"
         >
-          Iniciar sesión
+          <span v-if="!isSubmitting">Iniciar sesión</span>
+          <span v-else>Validando...</span>
         </button>
       </form>
 
+      <transition name="fade">
+        <p v-if="errorMessage" class="text-center text-sm text-rose-300">{{ errorMessage }}</p>
+      </transition>
+
       <div class="space-y-3 text-center text-sm text-slate-300">
-        <RouterLink to="/register" class="block text-brand-200 transition hover:text-brand-100">¿Aún no tienes cuenta? Regístrate</RouterLink>
-        <RouterLink to="/recover" class="block text-brand-200 transition hover:text-brand-100">¿Olvidaste tu contraseña?</RouterLink>
-        <RouterLink to="/" class="block text-slate-400 transition hover:text-slate-200">Volver a la pantalla principal</RouterLink>
+        <RouterLink to="/register" class="block text-brand-200 transition hover:text-brand-100">
+          ¿Aún no tienes cuenta? Regístrate
+        </RouterLink>
+        <RouterLink to="/recover" class="block text-brand-200 transition hover:text-brand-100">
+          ¿Olvidaste tu contraseña?
+        </RouterLink>
+        <RouterLink to="/" class="block text-slate-400 transition hover:text-slate-200">
+          Volver a la pantalla principal
+        </RouterLink>
       </div>
     </div>
   </div>
@@ -56,7 +73,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -67,6 +84,8 @@ const email = ref('')
 const password = ref('')
 const emailTouched = ref(false)
 const passwordTouched = ref(false)
+const errorMessage = ref('')
+const isSubmitting = ref(false)
 
 const emailRegex = /^[\w.!#$%&'*+/=?`{|}~-]+@[\w-]+(?:\.[\w-]+)+$/
 
@@ -86,14 +105,39 @@ const passwordError = computed(() => {
 
 const isFormValid = computed(() => emailRegex.test(email.value) && password.value.length >= 8)
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   emailTouched.value = true
   passwordTouched.value = true
+  errorMessage.value = ''
 
-  if (!isFormValid.value) return
+  if (!isFormValid.value || isSubmitting.value) return
 
-  authStore.login(email.value)
-  const redirectPath = (route.query.redirect as string) || '/dashboard'
-  router.push(redirectPath)
+  isSubmitting.value = true
+
+  try {
+    const result = await authStore.login(email.value, password.value)
+
+    if (result.success) {
+      const redirectPath = (route.query.redirect as string) || '/dashboard'
+      router.push(redirectPath)
+      return
+    }
+
+    errorMessage.value = result.message ?? 'Credenciales incorrectas.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
