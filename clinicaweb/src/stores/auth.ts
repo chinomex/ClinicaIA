@@ -25,10 +25,14 @@ const getDefaultBaseUrl = () => {
   }
 
   if (typeof window !== 'undefined') {
-    return `${window.location.protocol}//${window.location.hostname}:5000`
+    const protocol = window.location.protocol
+    const hostname = window.location.hostname
+    const port = protocol === 'https:' ? '7149' : '5075'
+
+    return `${protocol}//${hostname}:${port}`
   }
 
-  return 'http://localhost:5000'
+  return 'http://localhost:5075'
 }
 
 const apiClient = axios.create({
