@@ -30,6 +30,58 @@ const router = createRouter({
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
       meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'dashboard.overview',
+          component: () => import('@/views/dashboard/DashboardOverview.vue'),
+          meta: {
+            title: 'Resumen general',
+            description:
+              'Consulta un panorama general de tu actividad reciente y mantente al tanto de tus próximos compromisos clínicos.',
+          },
+        },
+        {
+          path: 'consultas/crear',
+          name: 'dashboard.consultations.create',
+          component: () => import('@/views/dashboard/ConsultationsCreateView.vue'),
+          meta: {
+            title: 'Crear nueva consulta',
+            description:
+              'Registra una nueva consulta capturando los datos del paciente, la valoración médica y las recomendaciones iniciales.',
+          },
+        },
+        {
+          path: 'consultas/historial',
+          name: 'dashboard.consultations.history',
+          component: () => import('@/views/dashboard/ConsultationHistoryView.vue'),
+          meta: {
+            title: 'Historial de consultas',
+            description:
+              'Revisa el detalle de las atenciones realizadas y filtra rápidamente para encontrar la información que necesitas.',
+          },
+        },
+        {
+          path: 'administracion/usuarios',
+          name: 'dashboard.users.catalog',
+          component: () => import('@/views/dashboard/UsersCatalogView.vue'),
+          meta: {
+            title: 'Catálogo de usuarios',
+            description:
+              'Administra las cuentas de acceso del personal administrativo y médico de la clínica desde un solo lugar.',
+          },
+        },
+        {
+          path: 'administracion/medicos',
+          name: 'dashboard.doctors.catalog',
+          component: () => import('@/views/dashboard/DoctorsCatalogView.vue'),
+          meta: {
+            title: 'Catálogo de médicos',
+            description:
+              'Gestiona el directorio médico, actualiza especialidades y mantiene los datos de contacto siempre disponibles.',
+          },
+        },
+      ],
     },
   ],
 })
@@ -46,7 +98,7 @@ router.beforeEach((to) => {
   }
 
   if (['login', 'register', 'recover'].includes(routeName) && authStore.isAuthenticated) {
-    return { name: 'dashboard' }
+    return { name: 'dashboard.overview' }
   }
 
   return true

@@ -11,45 +11,21 @@
         </div>
 
         <nav class="space-y-6 text-sm text-slate-200">
-          <div>
-            <p class="mb-3 text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Consultas</p>
+          <div v-for="section in navigation" :key="section.label">
+            <p class="mb-3 text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">{{ section.label }}</p>
             <ul class="space-y-2">
-              <li>
+              <li v-for="item in section.items" :key="item.name">
                 <button
                   type="button"
-                  class="w-full rounded-2xl bg-white/5 px-4 py-3 text-left font-semibold text-white transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+                  :class="[
+                    'w-full rounded-2xl px-4 py-3 text-left font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300',
+                    isActive(item.name)
+                      ? 'bg-brand-500/20 text-brand-100'
+                      : 'bg-white/5 text-white hover:bg-white/10',
+                  ]"
+                  @click="navigateTo(item.name)"
                 >
-                  Crear consultas
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  class="w-full rounded-2xl bg-white/5 px-4 py-3 text-left font-semibold text-white transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
-                >
-                  Historial consultas
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <p class="mb-3 text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Administración</p>
-            <ul class="space-y-2">
-              <li>
-                <button
-                  type="button"
-                  class="w-full rounded-2xl bg-white/5 px-4 py-3 text-left font-semibold text-white transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
-                >
-                  Catálogo de Usuarios
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  class="w-full rounded-2xl bg-white/5 px-4 py-3 text-left font-semibold text-white transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
-                >
-                  Catálogo de Médicos
+                  {{ item.label }}
                 </button>
               </li>
             </ul>
@@ -67,38 +43,14 @@
 
       <section class="flex-1 space-y-8">
         <header class="rounded-3xl bg-slate-900/70 p-8 shadow-2xl shadow-black/30 ring-1 ring-white/10">
-          <p class="text-sm font-medium uppercase tracking-[0.4em] text-brand-200">Bienvenido</p>
-          <h1 class="mt-3 font-display text-4xl font-semibold text-white">
-            Hola {{ displayName }}, nos alegra verte de nuevo
-          </h1>
+          <p class="text-sm font-medium uppercase tracking-[0.4em] text-brand-200">Hola {{ displayName }}</p>
+          <h1 class="mt-3 font-display text-4xl font-semibold text-white">{{ currentPageTitle }}</h1>
           <p class="mt-4 max-w-2xl text-sm text-slate-300">
-            Desde aquí puedes gestionar tus consultas, dar seguimiento a tratamientos y administrar el directorio clínico. Selecciona una opción del menú para comenzar.
+            {{ currentPageDescription }}
           </p>
         </header>
 
-        <div class="grid gap-6 md:grid-cols-2">
-          <article class="rounded-3xl bg-white/5 p-6 shadow-xl shadow-black/20 ring-1 ring-white/10">
-            <h2 class="font-display text-xl font-semibold text-white">Próximas consultas</h2>
-            <p class="mt-3 text-sm text-slate-300">Aún no tienes consultas agendadas para esta semana. Programa una nueva consulta para mantenerte al día con tu salud.</p>
-          </article>
-          <article class="rounded-3xl bg-white/5 p-6 shadow-xl shadow-black/20 ring-1 ring-white/10">
-            <h2 class="font-display text-xl font-semibold text-white">Resumen rápido</h2>
-            <ul class="mt-4 space-y-3 text-sm text-slate-200">
-              <li class="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
-                <span>Citas completadas este mes</span>
-                <span class="font-semibold text-white">3</span>
-              </li>
-              <li class="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
-                <span>Pacientes en seguimiento activo</span>
-                <span class="font-semibold text-white">8</span>
-              </li>
-              <li class="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
-                <span>Alertas pendientes</span>
-                <span class="font-semibold text-white">0</span>
-              </li>
-            </ul>
-          </article>
-        </div>
+        <RouterView />
       </section>
     </div>
   </div>
@@ -106,10 +58,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter, RouterView } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const displayName = computed(() => {
@@ -128,6 +81,46 @@ const displayName = computed(() => {
 
   return 'Paciente'
 })
+
+const navigation = [
+  {
+    label: 'Consultas',
+    items: [
+      { name: 'dashboard.consultations.create', label: 'Crear consultas' },
+      { name: 'dashboard.consultations.history', label: 'Historial consultas' },
+    ],
+  },
+  {
+    label: 'Administración',
+    items: [
+      { name: 'dashboard.users.catalog', label: 'Catálogo de usuarios' },
+      { name: 'dashboard.doctors.catalog', label: 'Catálogo de médicos' },
+    ],
+  },
+]
+
+const currentPageTitle = computed(() => {
+  return (route.meta.title as string | undefined) ?? 'Resumen general'
+})
+
+const currentPageDescription = computed(() => {
+  return (
+    (route.meta.description as string | undefined) ??
+    'Desde aquí puedes gestionar tus consultas, dar seguimiento a tratamientos y administrar el directorio clínico.'
+  )
+})
+
+const isActive = (name: string) => {
+  return route.name === name
+}
+
+const navigateTo = (name: string) => {
+  if (route.name === name) {
+    return
+  }
+
+  router.push({ name })
+}
 
 const handleLogout = () => {
   authStore.logout()

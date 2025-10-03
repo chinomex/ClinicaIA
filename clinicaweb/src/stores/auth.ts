@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { defineStore } from 'pinia'
+import { apiClient } from '@/lib/api'
 
 interface AuthState {
   isAuthenticated: boolean
@@ -18,26 +19,6 @@ interface LoginResult {
   message?: string
   data?: LoginResponse
 }
-
-const getDefaultBaseUrl = () => {
-  // if (import.meta.env.VITE_API_BASE_URL) {
-  //   return import.meta.env.VITE_API_BASE_URL
-  // }
-
-  // if (typeof window !== 'undefined') {
-  //   const protocol = window.location.protocol
-  //   const hostname = window.location.hostname
-  //   const port = protocol === 'https:' ? '7149' : '5075'
-
-  //   return `${protocol}//${hostname}:${port}`
-  // }
-
-  return 'https://localhost:7149'
-}
-
-const apiClient = axios.create({
-  baseURL: getDefaultBaseUrl(),
-})
 
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
