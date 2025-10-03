@@ -115,6 +115,48 @@ VALUES
      N'Valeria Noemí Blanco Serrano', 10);
 GO
 
+IF OBJECT_ID('dbo.spRegistrarUsuario', 'P') IS NOT NULL DROP PROCEDURE dbo.spRegistrarUsuario;
+GO
+CREATE PROCEDURE dbo.spRegistrarUsuario
+    @Correo NVARCHAR(256),
+    @Password NVARCHAR(200),
+    @NombreCompleto NVARCHAR(200),
+    @IdMedico INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+ 
+    DECLARE @PasswordHash NVARCHAR(64) = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Password), 2);
+ 
+    INSERT INTO dbo.Usuarios (Correo, PasswordHash, NombreCompleto, IdMedico)
+    VALUES (@Correo, @PasswordHash, @NombreCompleto, @IdMedico);
+END;
+GO
+ 
+IF OBJECT_ID('dbo.spValidarUsuario', 'P') IS NOT NULL DROP PROCEDURE dbo.spValidarUsuario;
+GO
+CREATE PROCEDURE dbo.spValidarUsuario
+    @Correo NVARCHAR(256),
+    @Password NVARCHAR(200)
+AS
+BEGIN
+    SET NOCOUNT ON;
+ 
+    DECLARE @PasswordHash NVARCHAR(64) = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Password), 2);
+ 
+    SELECT TOP (1)
+        u.Id,
+        u.Correo,
+        u.NombreCompleto,
+        u.Activo
+    FROM dbo.Usuarios AS u
+    WHERE u.Correo = @Correo
+      AND u.PasswordHash = @PasswordHash
+      AND u.Activo = 1;
+END;
+GO    
+    
+    
 IF OBJECT_ID('dbo.spGuardarMedico', 'P') IS NOT NULL DROP PROCEDURE dbo.spGuardarMedico;
 GO
 CREATE PROCEDURE dbo.spGuardarMedico
