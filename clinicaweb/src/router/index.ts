@@ -21,6 +21,16 @@ const router = createRouter({
       component: () => import('@/views/RegisterView.vue'),
     },
     {
+      path: '/tutorial',
+      name: 'tutorial',
+      component: () => import('@/views/TutorialView.vue'),
+      meta: {
+        title: 'Tutorial del portal',
+        description:
+          'Aprende paso a paso cómo utilizar las principales secciones del portal clínico y saca el máximo provecho de tus herramientas digitales.',
+      },
+    },
+    {
       path: '/recover',
       name: 'recover',
       component: () => import('@/views/RecoverView.vue'),
@@ -79,6 +89,16 @@ const router = createRouter({
             title: 'Catálogo de médicos',
             description:
               'Gestiona el directorio médico, actualiza especialidades y mantiene los datos de contacto siempre disponibles.',
+          },
+        },
+        {
+          path: 'ayuda',
+          name: 'dashboard.help.center',
+          component: () => import('@/views/dashboard/HelpCenterView.vue'),
+          meta: {
+            title: 'Centro de ayuda',
+            description:
+              'Consulta guías rápidas, consejos y respuestas frecuentes para sacar el máximo provecho del portal clínico.',
           },
         },
       ],

@@ -47,6 +47,12 @@
             >
               ¿Olvidaste tu contraseña?
             </RouterLink>
+            <RouterLink
+              to="/tutorial"
+              class="inline-flex items-center justify-center rounded-full border border-brand-400/30 px-5 py-3 text-sm font-semibold text-brand-100 transition hover:border-brand-300/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+            >
+              Ver tutorial del portal
+            </RouterLink>
           </div>
         </div>
         <div class="relative">
