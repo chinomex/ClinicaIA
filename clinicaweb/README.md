@@ -1,48 +1,62 @@
-# clinicaweb
+# Frontend web de ClinicaIA
 
-This template should help get you started developing with Vue 3 in Vite.
+Aplicación SPA desarrollada con **Vue 3 + Vite** para la gestión operativa de una clínica.
+Incluye autenticación, panel administrativo y flujos para registrar consultas médicas.
 
-## Recommended IDE Setup
+## Características principales
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- Enrutamiento protegido con `vue-router` y guardas basadas en sesión.
+- Manejo centralizado del estado de autenticación con **Pinia**.
+- Formularios modulares para crear consultas y administrar catálogos de usuarios y médicos.
+- Consumo de la API de ClinicaIA mediante un cliente Axios configurado en `src/lib/api.ts`.
 
-## Recommended Browser Setup
+## Requisitos
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd) 
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+- Node.js 20 o superior.
+- npm (se instala con Node.js).
+- Acceso a la API en ejecución (por defecto `https://localhost:7149`).
 
-## Type Support for `.vue` Imports in TS
+## Configuración
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+1. Instala dependencias:
 
-## Customize configuration
+   ```bash
+   npm install
+   ```
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+2. Ajusta la URL base de la API si es necesario. Puedes modificar la función
+   `getDefaultBaseUrl()` en [`src/lib/api.ts`](src/lib/api.ts) o crear una instancia
+   personalizada de Axios antes de iniciar sesión.
 
-## Project Setup
+3. Crea un archivo `.env.local` si deseas sobrescribir variables de Vite, por ejemplo:
 
-```sh
-npm install
-```
+   ```bash
+   VITE_API_BASE_URL=https://mi-servidor:7149
+   ```
 
-### Compile and Hot-Reload for Development
+   Luego actualiza `apiClient` para leer la variable (`import.meta.env.VITE_API_BASE_URL`).
 
-```sh
-npm run dev
-```
+## Comandos disponibles
 
-### Type-Check, Compile and Minify for Production
+| Comando            | Descripción                                                    |
+| ------------------ | -------------------------------------------------------------- |
+| `npm run dev`      | Servidor de desarrollo en `http://localhost:5173`.             |
+| `npm run build`    | Genera la versión optimizada para producción en `dist/`.       |
+| `npm run preview`  | Sirve la build de producción para validación manual.           |
+| `npm run lint`     | Ejecuta ESLint con la configuración del proyecto.              |
 
-```sh
-npm run build
-```
+## Estructura relevante
 
-### Lint with [ESLint](https://eslint.org/)
+- `src/router/`: definición de rutas y guardas de navegación.
+- `src/stores/auth.ts`: store de autenticación con operaciones de login/logout.
+- `src/views/`: vistas principales (login, registro, dashboard y secciones internas).
+- `src/lib/api.ts`: cliente Axios que centraliza las llamadas a la API REST.
 
-```sh
-npm run lint
-```
+## Autenticación y flujo de trabajo
+
+1. El usuario inicia sesión desde `/login`; el store `useAuthStore` invoca `POST /api/auth/login`.
+2. Una sesión válida habilita el acceso a `/dashboard` y sus rutas hijas protegidas.
+3. En el dashboard se pueden crear consultas, revisar historial y administrar catálogos.
+4. El cierre de sesión limpia el estado en Pinia y redirige a la vista de login.
+
+Para más detalles sobre los servicios disponibles consulta la [documentación de la API](../CliniaApi/README.md).
