@@ -32,7 +32,7 @@ const getDefaultBaseUrl = () => {
   //   return `${protocol}//${hostname}:${port}`
   // }
 
-  return 'http://localhost:7149'
+  return 'https://localhost:7149'
 }
 
 const apiClient = axios.create({
