@@ -57,6 +57,7 @@ CREATE TABLE dbo.Consultas
     Sintomas NVARCHAR(MAX) NULL,
     Recomendaciones NVARCHAR(MAX) NULL,
     Diagnostico NVARCHAR(MAX) NULL,
+    FechaCreacion DATETIME2(0) NOT NULL DEFAULT (SYSUTCDATETIME()),
     CONSTRAINT FK_Consultas_Medicos FOREIGN KEY (IdMedico) REFERENCES dbo.Medicos (Id),
     CONSTRAINT FK_Consultas_Pacientes FOREIGN KEY (IdPaciente) REFERENCES dbo.Pacientes (Id)
 );
@@ -114,43 +115,281 @@ VALUES
      N'Valeria Noemí Blanco Serrano', 10);
 GO
 
-IF OBJECT_ID('dbo.spRegistrarUsuario', 'P') IS NOT NULL DROP PROCEDURE dbo.spRegistrarUsuario;
+IF OBJECT_ID('dbo.spGuardarMedico', 'P') IS NOT NULL DROP PROCEDURE dbo.spGuardarMedico;
 GO
-CREATE PROCEDURE dbo.spRegistrarUsuario
-    @Correo NVARCHAR(256),
-    @Password NVARCHAR(200),
-    @NombreCompleto NVARCHAR(200),
-    @IdMedico INT = NULL
+CREATE PROCEDURE dbo.spGuardarMedico
+    @Id INT = NULL,
+    @PrimerNombre NVARCHAR(100),
+    @SegundoNombre NVARCHAR(100) = NULL,
+    @ApellidoPaterno NVARCHAR(100),
+    @ApellidoMaterno NVARCHAR(100) = NULL,
+    @Cedula NVARCHAR(50),
+    @Telefono NVARCHAR(30) = NULL,
+    @Especialidad NVARCHAR(150) = NULL,
+    @Email NVARCHAR(256),
+    @Activo BIT = 1
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @PasswordHash NVARCHAR(64) = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Password), 2);
+    IF @Id IS NULL
+    BEGIN
+        INSERT INTO dbo.Medicos (
+            PrimerNombre,
+            SegundoNombre,
+            ApellidoPaterno,
+            ApellidoMaterno,
+            Cedula,
+            Telefono,
+            Especialidad,
+            Email,
+            Activo
+        )
+        VALUES (
+            @PrimerNombre,
+            @SegundoNombre,
+            @ApellidoPaterno,
+            @ApellidoMaterno,
+            @Cedula,
+            @Telefono,
+            @Especialidad,
+            @Email,
+            @Activo
+        );
 
-    INSERT INTO dbo.Usuarios (Correo, PasswordHash, NombreCompleto, IdMedico)
-    VALUES (@Correo, @PasswordHash, @NombreCompleto, @IdMedico);
+        SET @Id = SCOPE_IDENTITY();
+    END
+    ELSE
+    BEGIN
+        UPDATE dbo.Medicos
+        SET PrimerNombre = @PrimerNombre,
+            SegundoNombre = @SegundoNombre,
+            ApellidoPaterno = @ApellidoPaterno,
+            ApellidoMaterno = @ApellidoMaterno,
+            Cedula = @Cedula,
+            Telefono = @Telefono,
+            Especialidad = @Especialidad,
+            Email = @Email,
+            Activo = @Activo
+        WHERE Id = @Id;
+    END;
+
+    SELECT
+        m.Id,
+        m.PrimerNombre,
+        m.SegundoNombre,
+        m.ApellidoPaterno,
+        m.ApellidoMaterno,
+        m.Cedula,
+        m.Telefono,
+        m.Especialidad,
+        m.Email,
+        m.Activo,
+        m.FechaCreacion
+    FROM dbo.Medicos AS m
+    WHERE m.Id = @Id;
 END;
 GO
 
-IF OBJECT_ID('dbo.spValidarUsuario', 'P') IS NOT NULL DROP PROCEDURE dbo.spValidarUsuario;
+IF OBJECT_ID('dbo.spObtenerMedicos', 'P') IS NOT NULL DROP PROCEDURE dbo.spObtenerMedicos;
 GO
-CREATE PROCEDURE dbo.spValidarUsuario
-    @Correo NVARCHAR(256),
-    @Password NVARCHAR(200)
+CREATE PROCEDURE dbo.spObtenerMedicos
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @PasswordHash NVARCHAR(64) = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Password), 2);
+    SELECT
+        m.Id,
+        m.PrimerNombre,
+        m.SegundoNombre,
+        m.ApellidoPaterno,
+        m.ApellidoMaterno,
+        m.Cedula,
+        m.Telefono,
+        m.Especialidad,
+        m.Email,
+        m.Activo,
+        m.FechaCreacion
+    FROM dbo.Medicos AS m
+    ORDER BY m.PrimerNombre, m.ApellidoPaterno, m.ApellidoMaterno;
+END;
+GO
 
-    SELECT TOP (1)
+IF OBJECT_ID('dbo.spGuardarUsuario', 'P') IS NOT NULL DROP PROCEDURE dbo.spGuardarUsuario;
+GO
+CREATE PROCEDURE dbo.spGuardarUsuario
+    @Id INT = NULL,
+    @Correo NVARCHAR(256),
+    @Password NVARCHAR(200) = NULL,
+    @NombreCompleto NVARCHAR(200),
+    @IdMedico INT = NULL,
+    @Activo BIT = 1
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @PasswordHash NVARCHAR(64) = NULL;
+
+    IF @Password IS NOT NULL
+    BEGIN
+        SET @PasswordHash = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Password), 2);
+    END;
+
+    IF @Id IS NULL
+    BEGIN
+        IF @PasswordHash IS NULL
+        BEGIN
+            RAISERROR('La contraseña es obligatoria para nuevos usuarios.', 16, 1);
+            RETURN;
+        END;
+
+        INSERT INTO dbo.Usuarios (
+            Correo,
+            PasswordHash,
+            NombreCompleto,
+            IdMedico,
+            Activo
+        )
+        VALUES (
+            @Correo,
+            @PasswordHash,
+            @NombreCompleto,
+            @IdMedico,
+            @Activo
+        );
+
+        SET @Id = SCOPE_IDENTITY();
+    END
+    ELSE
+    BEGIN
+        UPDATE dbo.Usuarios
+        SET Correo = @Correo,
+            NombreCompleto = @NombreCompleto,
+            IdMedico = @IdMedico,
+            Activo = @Activo,
+            PasswordHash = COALESCE(@PasswordHash, PasswordHash)
+        WHERE Id = @Id;
+    END;
+
+    SELECT
         u.Id,
         u.Correo,
+        u.PasswordHash,
         u.NombreCompleto,
-        u.Activo
+        u.IdMedico,
+        u.Activo,
+        u.FechaCreacion
     FROM dbo.Usuarios AS u
-    WHERE u.Correo = @Correo
-      AND u.PasswordHash = @PasswordHash
-      AND u.Activo = 1;
+    WHERE u.Id = @Id;
+END;
+GO
+
+IF OBJECT_ID('dbo.spObtenerUsuarios', 'P') IS NOT NULL DROP PROCEDURE dbo.spObtenerUsuarios;
+GO
+CREATE PROCEDURE dbo.spObtenerUsuarios
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        u.Id,
+        u.Correo,
+        u.PasswordHash,
+        u.NombreCompleto,
+        u.IdMedico,
+        u.Activo,
+        u.FechaCreacion
+    FROM dbo.Usuarios AS u
+    ORDER BY u.NombreCompleto;
+END;
+GO
+
+IF OBJECT_ID('dbo.spRegistrarConsulta', 'P') IS NOT NULL DROP PROCEDURE dbo.spRegistrarConsulta;
+GO
+CREATE PROCEDURE dbo.spRegistrarConsulta
+    @IdMedico INT,
+    @IdPaciente INT,
+    @Sintomas NVARCHAR(MAX) = NULL,
+    @Recomendaciones NVARCHAR(MAX) = NULL,
+    @Diagnostico NVARCHAR(MAX) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO dbo.Consultas (
+        IdMedico,
+        IdPaciente,
+        Sintomas,
+        Recomendaciones,
+        Diagnostico
+    )
+    VALUES (
+        @IdMedico,
+        @IdPaciente,
+        @Sintomas,
+        @Recomendaciones,
+        @Diagnostico
+    );
+
+    DECLARE @Id INT = SCOPE_IDENTITY();
+
+    SELECT
+        c.Id,
+        c.IdMedico,
+        c.IdPaciente,
+        c.Sintomas,
+        c.Recomendaciones,
+        c.Diagnostico,
+        c.FechaCreacion,
+        MedicoNombreCompleto = CONCAT(
+            m.PrimerNombre, ' ',
+            ISNULL(m.SegundoNombre + ' ', ''),
+            m.ApellidoPaterno, ' ',
+            ISNULL(m.ApellidoMaterno, '')
+        ),
+        PacienteNombreCompleto = CONCAT(
+            p.PrimerNombre, ' ',
+            ISNULL(p.SegundoNombre + ' ', ''),
+            p.ApellidoPaterno, ' ',
+            ISNULL(p.ApellidoMaterno, '')
+        )
+    FROM dbo.Consultas AS c
+        INNER JOIN dbo.Medicos AS m ON m.Id = c.IdMedico
+        INNER JOIN dbo.Pacientes AS p ON p.Id = c.IdPaciente
+    WHERE c.Id = @Id;
+END;
+GO
+
+IF OBJECT_ID('dbo.spObtenerConsultasHistorial', 'P') IS NOT NULL DROP PROCEDURE dbo.spObtenerConsultasHistorial;
+GO
+CREATE PROCEDURE dbo.spObtenerConsultasHistorial
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        c.Id,
+        c.IdMedico,
+        c.IdPaciente,
+        c.Sintomas,
+        c.Recomendaciones,
+        c.Diagnostico,
+        c.FechaCreacion,
+        MedicoNombreCompleto = CONCAT(
+            m.PrimerNombre, ' ',
+            ISNULL(m.SegundoNombre + ' ', ''),
+            m.ApellidoPaterno, ' ',
+            ISNULL(m.ApellidoMaterno, '')
+        ),
+        PacienteNombreCompleto = CONCAT(
+            p.PrimerNombre, ' ',
+            ISNULL(p.SegundoNombre + ' ', ''),
+            p.ApellidoPaterno, ' ',
+            ISNULL(p.ApellidoMaterno, '')
+        )
+    FROM dbo.Consultas AS c
+        INNER JOIN dbo.Medicos AS m ON m.Id = c.IdMedico
+        INNER JOIN dbo.Pacientes AS p ON p.Id = c.IdPaciente
+    ORDER BY c.FechaCreacion DESC, c.Id DESC;
 END;
 GO

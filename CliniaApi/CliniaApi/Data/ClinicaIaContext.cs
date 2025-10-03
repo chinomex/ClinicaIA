@@ -14,6 +14,7 @@ public class ClinicaIaContext : DbContext
     public DbSet<Medico> Medicos => Set<Medico>();
     public DbSet<Paciente> Pacientes => Set<Paciente>();
     public DbSet<Consulta> Consultas => Set<Consulta>();
+    public DbSet<ConsultaHistorialItem> ConsultasHistorial => Set<ConsultaHistorialItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,6 +69,12 @@ public class ClinicaIaContext : DbContext
                 .WithMany(p => p.Consultas)
                 .HasForeignKey(c => c.IdPaciente)
                 .HasConstraintName("FK_Consultas_Pacientes");
+        });
+
+        modelBuilder.Entity<ConsultaHistorialItem>(entity =>
+        {
+            entity.HasNoKey();
+            entity.ToView(null);
         });
     }
 }

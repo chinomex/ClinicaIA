@@ -16,7 +16,22 @@
     </div>
 
     <div class="rounded-3xl bg-white/5 p-6 shadow-2xl shadow-black/20 ring-1 ring-white/10">
-      <table class="min-w-full divide-y divide-white/10 text-sm text-slate-200">
+      <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="text-sm text-slate-300">
+          <span v-if="isLoading">Cargando historial...</span>
+          <span v-else-if="storeError" class="text-rose-200">{{ storeError }}</span>
+          <button
+            v-else
+            type="button"
+            class="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-200 hover:border-white/30"
+            @click="refresh"
+          >
+            Actualizar historial
+          </button>
+        </div>
+      </header>
+
+      <table class="mt-4 min-w-full divide-y divide-white/10 text-sm text-slate-200">
         <thead>
           <tr class="text-left uppercase tracking-[0.3em] text-xs text-slate-400">
             <th class="px-4 py-3">Fecha</th>
@@ -31,10 +46,10 @@
             :key="consulta.id"
             class="border-b border-white/5 last:border-none hover:bg-white/5"
           >
-            <td class="px-4 py-3">{{ consulta.fecha }}</td>
-            <td class="px-4 py-3 font-medium text-white">{{ consulta.paciente }}</td>
-            <td class="px-4 py-3">{{ consulta.medico }}</td>
-            <td class="px-4 py-3">{{ consulta.diagnostico }}</td>
+            <td class="px-4 py-3">{{ formatDate(consulta.fechaCreacion) }}</td>
+            <td class="px-4 py-3 font-medium text-white">{{ consulta.pacienteNombreCompleto }}</td>
+            <td class="px-4 py-3">{{ consulta.medicoNombreCompleto }}</td>
+            <td class="px-4 py-3">{{ consulta.diagnostico || 'Sin diagnóstico registrado' }}</td>
           </tr>
           <tr v-if="filteredConsultations.length === 0">
             <td colspan="4" class="px-4 py-6 text-center text-sm text-slate-400">
@@ -48,54 +63,55 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, reactive, watchEffect } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useConsultationsStore } from '@/stores/consultations'
 
-interface ConsultaResumen {
-  id: number
-  fecha: string
-  paciente: string
-  medico: string
-  diagnostico: string
-}
-
-const consultas: ConsultaResumen[] = [
-  {
-    id: 1,
-    fecha: '12/01/2025',
-    paciente: 'Luis Fernández',
-    medico: 'Dr. Carlos Ramírez',
-    diagnostico: 'Hipertensión controlada',
-  },
-  {
-    id: 2,
-    fecha: '09/01/2025',
-    paciente: 'María Camacho',
-    medico: 'Dra. Lucía Herrera',
-    diagnostico: 'Seguimiento pediátrico',
-  },
-  {
-    id: 3,
-    fecha: '05/01/2025',
-    paciente: 'Andrés Ortega',
-    medico: 'Dr. Juan Gómez',
-    diagnostico: 'Dermatitis atópica',
-  },
-]
+const consultationsStore = useConsultationsStore()
+const { consultations, isLoading, error: storeError } = storeToRefs(consultationsStore)
 
 const filters = reactive({
   query: '',
 })
 
+const ensureHistoryLoaded = async () => {
+  if (!consultationsStore.hasLoaded) {
+    try {
+      await consultationsStore.fetchHistory()
+    } catch (error) {
+      console.error(error)
+    }
+  }
+}
+
+watchEffect(() => {
+  void ensureHistoryLoaded()
+})
+
 const filteredConsultations = computed(() => {
   const value = filters.query.trim().toLowerCase()
   if (!value) {
-    return consultas
+    return consultations.value
   }
 
-  return consultas.filter((consulta) =>
-    [consulta.paciente, consulta.medico, consulta.diagnostico].some((field) =>
-      field.toLowerCase().includes(value),
-    ),
+  return consultations.value.filter((consulta) =>
+    [consulta.pacienteNombreCompleto, consulta.medicoNombreCompleto, consulta.diagnostico ?? '']
+      .join(' ')
+      .toLowerCase()
+      .includes(value),
   )
 })
+
+const formatDate = (isoDate: string) => {
+  const date = new Date(isoDate)
+  return date.toLocaleDateString()
+}
+
+const refresh = async () => {
+  try {
+    await consultationsStore.fetchHistory()
+  } catch (error) {
+    console.error(error)
+  }
+}
 </script>
