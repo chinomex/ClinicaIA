@@ -1,6 +1,7 @@
 export interface AxiosRequestConfig {
   baseURL?: string
   headers?: Record<string, string>
+  params?: Record<string, string | number | boolean | null | undefined>
 }
 
 export interface AxiosResponse<T = unknown> {
@@ -30,20 +31,45 @@ class AxiosInstance {
     this.defaults = defaults ?? {}
   }
 
-  private buildUrl(url: string, baseURL?: string) {
-    if (!baseURL) {
-      return url
+  private buildUrl(url: string, baseURL?: string, params?: AxiosRequestConfig['params']) {
+    let fullUrl = url
+
+    if (baseURL) {
+      try {
+        fullUrl = new URL(url, baseURL).toString()
+      } catch {
+        const separator = baseURL.endsWith('/') || url.startsWith('/') ? '' : '/'
+        fullUrl = `${baseURL}${separator}${url}`
+      }
     }
 
-    try {
-      return new URL(url, baseURL).toString()
-    } catch {
-      const separator = baseURL.endsWith('/') || url.startsWith('/') ? '' : '/'
-      return `${baseURL}${separator}${url}`
+    if (params && Object.keys(params).length > 0) {
+      const hasBase = /^https?:/i.test(fullUrl)
+      const baseForUrl = hasBase ? undefined : 'resolve://'
+      const urlObject = new URL(fullUrl, baseForUrl)
+      const searchParams = urlObject.searchParams
+
+      for (const [key, value] of Object.entries(params)) {
+        if (value === undefined || value === null) {
+          continue
+        }
+
+        searchParams.set(key, String(value))
+      }
+
+      urlObject.search = searchParams.toString()
+      fullUrl = hasBase ? urlObject.toString() : urlObject.toString().replace('resolve://', '')
     }
+
+    return fullUrl
   }
 
-  async post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  private async request<T = unknown>(
+    method: string,
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<T>> {
     const finalConfig: AxiosRequestConfig = {
       ...this.defaults,
       ...config,
@@ -54,13 +80,18 @@ class AxiosInstance {
       },
     }
 
-    const requestUrl = this.buildUrl(url, finalConfig.baseURL)
+    const requestUrl = this.buildUrl(url, finalConfig.baseURL, finalConfig.params)
 
-    const response = await fetch(requestUrl, {
-      method: 'POST',
+    const init: RequestInit = {
+      method: method.toUpperCase(),
       headers: finalConfig.headers,
-      body: data !== undefined ? JSON.stringify(data) : undefined,
-    })
+    }
+
+    if (data !== undefined && init.method !== 'GET' && init.method !== 'HEAD') {
+      init.body = JSON.stringify(data)
+    }
+
+    const response = await fetch(requestUrl, init)
 
     const text = await response.text()
     let parsedData: T | string | null = null
@@ -86,6 +117,26 @@ class AxiosInstance {
     }
 
     return axiosResponse
+  }
+
+  async get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.request<T>('GET', url, undefined, config)
+  }
+
+  async post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.request<T>('POST', url, data, config)
+  }
+
+  async put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.request<T>('PUT', url, data, config)
+  }
+
+  async patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.request<T>('PATCH', url, data, config)
+  }
+
+  async delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.request<T>('DELETE', url, undefined, config)
   }
 }
 
