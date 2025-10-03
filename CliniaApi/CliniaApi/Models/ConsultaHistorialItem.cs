@@ -2,7 +2,7 @@ using System;
 
 namespace CliniaApi.Models;
 
-public class Consulta
+public class ConsultaHistorialItem
 {
     public int Id { get; set; }
     public int IdMedico { get; set; }
@@ -11,7 +11,6 @@ public class Consulta
     public string? Recomendaciones { get; set; }
     public string? Diagnostico { get; set; }
     public DateTime FechaCreacion { get; set; }
-
-    public Medico? Medico { get; set; }
-    public Paciente? Paciente { get; set; }
+    public string MedicoNombreCompleto { get; set; } = string.Empty;
+    public string PacienteNombreCompleto { get; set; } = string.Empty;
 }

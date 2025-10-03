@@ -8,24 +8,26 @@
     <form class="mt-8 grid gap-6 md:grid-cols-2" @submit.prevent="handleSubmit">
       <label class="flex flex-col space-y-2 text-sm">
         <span class="font-semibold text-slate-200">Médico *</span>
-        <input
-          v-model="form.medico"
-          type="text"
+        <select
+          v-model.number="form.idMedico"
           class="rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 text-white focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-300"
-          placeholder="Nombre completo del médico"
           required
-        />
+        >
+          <option value="" disabled>Selecciona un médico</option>
+          <option v-for="doctor in doctorOptions" :key="doctor.value" :value="doctor.value">{{ doctor.label }}</option>
+        </select>
       </label>
 
       <label class="flex flex-col space-y-2 text-sm">
         <span class="font-semibold text-slate-200">Paciente *</span>
-        <input
-          v-model="form.paciente"
-          type="text"
+        <select
+          v-model.number="form.idPaciente"
           class="rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 text-white focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-300"
-          placeholder="Nombre completo del paciente"
           required
-        />
+        >
+          <option value="" disabled>Selecciona un paciente</option>
+          <option v-for="patient in patientOptions" :key="patient.value" :value="patient.value">{{ patient.label }}</option>
+        </select>
       </label>
 
       <label class="flex flex-col space-y-2 text-sm md:col-span-2">
@@ -63,50 +65,120 @@
         <button
           type="submit"
           class="inline-flex w-full items-center justify-center rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+          :disabled="isSubmitting"
         >
           Guardar consulta
         </button>
       </div>
     </form>
 
-    <p v-if="showConfirmation" class="mt-6 rounded-2xl bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-200">
-      Consulta registrada correctamente. Puedes revisarla en el historial.
+    <p
+      v-if="feedback"
+      :class="[
+        'mt-6 rounded-2xl px-4 py-3 text-sm font-medium',
+        feedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-200' : 'bg-rose-500/10 text-rose-200',
+      ]"
+    >
+      {{ feedback.message }}
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref, watchEffect } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useConsultationsStore } from '@/stores/consultations'
+import { useDoctorsStore } from '@/stores/doctors'
+import { usePatientsStore } from '@/stores/patients'
 
-type FormState = {
-  medico: string
-  paciente: string
-  sintomas: string
-  diagnostico: string
-  recomendaciones: string
-}
+const consultationsStore = useConsultationsStore()
+const doctorsStore = useDoctorsStore()
+const patientsStore = usePatientsStore()
 
-const initialState: FormState = {
-  medico: '',
-  paciente: '',
+const { doctorOptions: doctorOptionsStore } = storeToRefs(doctorsStore)
+const { patientOptions: patientOptionsStore } = storeToRefs(patientsStore)
+
+const isSubmitting = ref(false)
+const feedback = ref<{ type: 'success' | 'error'; message: string } | null>(null)
+
+const form = reactive({
+  idMedico: null as number | null,
+  idPaciente: null as number | null,
   sintomas: '',
   diagnostico: '',
   recomendaciones: '',
-}
-
-const form = reactive<FormState>({ ...initialState })
-const showConfirmation = ref(false)
+})
 
 const resetForm = () => {
-  Object.assign(form, initialState)
+  Object.assign(form, {
+    idMedico: null,
+    idPaciente: null,
+    sintomas: '',
+    diagnostico: '',
+    recomendaciones: '',
+  })
 }
 
-const handleSubmit = () => {
-  showConfirmation.value = true
+const ensureDataLoaded = async () => {
+  if (!doctorsStore.hasLoaded) {
+    try {
+      await doctorsStore.fetchDoctors()
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  if (!patientsStore.hasLoaded) {
+    try {
+      await patientsStore.fetchPatients()
+    } catch (error) {
+      console.error(error)
+    }
+  }
+}
+
+watchEffect(() => {
+  void ensureDataLoaded()
+})
+
+const showFeedback = (type: 'success' | 'error', message: string) => {
+  feedback.value = { type, message }
   window.setTimeout(() => {
-    showConfirmation.value = false
+    feedback.value = null
   }, 4000)
-
-  resetForm()
 }
+
+const handleSubmit = async () => {
+  if (!form.idMedico || !form.idPaciente) {
+    showFeedback('error', 'Selecciona el médico y el paciente para la consulta.')
+    return
+  }
+
+  if (!form.sintomas.trim()) {
+    showFeedback('error', 'Describe los síntomas del paciente.')
+    return
+  }
+
+  isSubmitting.value = true
+
+  try {
+    await consultationsStore.createConsultation({
+      idMedico: form.idMedico,
+      idPaciente: form.idPaciente,
+      sintomas: form.sintomas,
+      diagnostico: form.diagnostico || null,
+      recomendaciones: form.recomendaciones || null,
+    })
+    showFeedback('success', 'Consulta registrada correctamente. Puedes revisarla en el historial.')
+    resetForm()
+  } catch (error) {
+    console.error(error)
+    showFeedback('error', consultationsStore.error ?? 'Ocurrió un error al registrar la consulta.')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+const doctorOptions = computed(() => doctorOptionsStore.value)
+const patientOptions = computed(() => patientOptionsStore.value)
 </script>
