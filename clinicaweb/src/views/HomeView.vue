@@ -3,11 +3,11 @@
     <div class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(58,58,255,0.35),_transparent_60%)]"></div>
     <header class="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10 md:flex-row md:items-center md:justify-between">
       <div class="flex items-center gap-4">
-        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-500/10 text-brand-300">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-        </div>
+        <img
+          src="@/assets/consultorio-medico-logo.svg"
+          alt="Consultorio Médico"
+          class="h-12 w-auto rounded-2xl shadow-lg shadow-brand-500/30"
+        />
         <div>
           <p class="font-display text-2xl font-semibold tracking-tight">Clínica Integral Aurora</p>
           <p class="text-sm text-slate-400">Tecnología y calidez para tu bienestar</p>
