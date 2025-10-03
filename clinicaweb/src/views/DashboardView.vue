@@ -97,6 +97,10 @@ const navigation = [
       { name: 'dashboard.doctors.catalog', label: 'Catálogo de médicos' },
     ],
   },
+  {
+    label: 'Soporte',
+    items: [{ name: 'dashboard.help.center', label: 'Ayuda' }],
+  },
 ]
 
 const currentPageTitle = computed(() => {
